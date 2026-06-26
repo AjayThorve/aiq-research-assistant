@@ -74,6 +74,12 @@ PLANNER_AGENT = "planner-agent"
 RESEARCHER_AGENT = "researcher-agent"
 SOURCE_ROUTER_AGENT = "source-router-agent"
 WRITER_AGENT = "writer-agent"
+PARENT_REPORT_CONTEXT_FILES = frozenset(
+    {
+        "/shared/original_report.md",
+        "/shared/parent_report_context.json",
+    }
+)
 
 
 @tool
@@ -126,6 +132,10 @@ class DeepResearchGraphContext:
     @property
     def available_documents(self) -> list[dict[str, Any]]:
         return [doc.model_dump() for doc in (self.state.available_documents or [])]
+
+    @property
+    def parent_report_context_available(self) -> bool:
+        return any(path in self.state.files for path in PARENT_REPORT_CONTEXT_FILES)
 
     def render_prompt(self, prompt_name: str, **values: Any) -> str:
         return render_prompt_template(
@@ -398,6 +408,7 @@ def build_deep_research_subagents(context: DeepResearchGraphContext) -> list[dic
             role=LLMRole.REPORT_WRITER,
             tools=context.tool_set.writer_tools,
             middleware=context.middleware_set.writer,
+            prompt_values={"parent_report_context_available": context.parent_report_context_available},
             skills=context.skill_sources(WRITER_AGENT),
         ),
     )
@@ -469,6 +480,7 @@ def build_deep_research_graph(
             enable_source_router=context.enable_source_router,
             max_research_concurrency=context.max_research_concurrency,
             execution_enabled=context.runtime.execution_enabled,
+            parent_report_context_available=context.parent_report_context_available,
         ),
         subagents=build_deep_research_subagents(context),
         store=InMemoryStore(),
