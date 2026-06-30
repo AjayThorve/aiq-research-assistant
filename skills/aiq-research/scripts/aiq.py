@@ -233,6 +233,12 @@ def get_report(job_id: str) -> dict[str, Any]:
     return _api_request("GET", f"/v1/jobs/async/job/{_validate_job_id(job_id)}/report")
 
 
+def edit_report(job_id: str, edit_instruction: str) -> dict[str, Any]:
+    """Edit the final report for a completed async AI-Q job."""
+    body = {"input": edit_instruction, "job_id": job_id}
+    return _api_request("POST", f"/v1/jobs/async/job/{_validate_job_id(job_id)}/report/edit", body=body)
+
+
 def cancel_job(job_id: str) -> dict[str, Any]:
     """Request cancellation for a running async AI-Q job."""
     return _api_request("POST", f"/v1/jobs/async/job/{_validate_job_id(job_id)}/cancel")
@@ -396,6 +402,18 @@ def _command_report(args: list[str]) -> None:
     print(json.dumps(get_report(job_id), indent=JSON_INDENT_SPACES))
 
 
+def _command_report_edit(args: list[str]) -> None:
+    job_id = _require_arg(args, "Usage: aiq.py report_edit <job_id> <new focus>")
+    edit_instruction = _require_arg(args, "Usage: aiq.py report_edit <job_id> <new focus>", position=1)
+    result = edit_report(job_id, edit_instruction)
+    child_job_id = result.get("job_id")
+    if not child_job_id:
+        print(f"ERROR: No child_job_id in response: {result}", file=sys.stderr)
+        sys.exit(EXIT_FAILURE)
+    print(f"job submitted: {child_job_id}", file=sys.stderr)
+    _poll_until_success_or_exit(child_job_id)
+
+
 def _command_research(args: list[str]) -> None:
     query = _require_arg(args, "Usage: aiq.py research <query> [agent_type]")
     agent_type = args[OPTIONAL_AGENT_TYPE_POSITION] if len(args) > OPTIONAL_AGENT_TYPE_POSITION else DEFAULT_AGENT_TYPE
@@ -464,6 +482,7 @@ def main() -> None:
         "state": _command_state,
         "stream": _command_stream,
         "report": _command_report,
+        "report_edit": _command_report_edit,
         "research": _command_research,
         "research_poll": _command_research_poll,
         "cancel": _command_cancel,

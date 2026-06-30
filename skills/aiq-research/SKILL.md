@@ -178,6 +178,13 @@ retrieval from Steps 1-5 apply; there is no separate follow-up endpoint.
   If this returns a `deep_research_running` job ID, poll it with `research_poll`
   exactly as in Step 3.
 
+**Edit** — rewrite a report with cosmetic changes. This skill only has access
+to the data used to generate the initial report. No tools are available.
+
+```bash
+python3 $SKILL_DIR/scripts/aiq.py report_edit <JOB_ID> "<EDIT_INSTRUCTIONS>"
+```
+
 **Redo** — re-run research with adjusted scope (a narrower query, a corrected
 question, or a different depth):
 
